@@ -34,9 +34,10 @@ from src.services.fingerprint_extract_service import process_fingerprint
 def extract_fingerprints():
     if 'finger' not in request.files:
         return jsonify({'success': False, 'data': {}, 'message': 'No image file provided'}), 400
-
-    uploaded_file = request.files['finger']
+    
     user_id = request.form.get('userId')
+    uploaded_file = request.files['finger']
+    
 
     if not uploaded_file:
         return jsonify({'success': False, 'data': {}, 'message': 'No finger provided in form data'}), 400

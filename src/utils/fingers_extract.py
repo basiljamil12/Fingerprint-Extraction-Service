@@ -17,20 +17,20 @@ def remove_background(image_path):
 
     return output_image_np
 
-def zoom_in_on_contour(img, contour, padding=10):
-    # Find the bounding box of the contour
-    x, y, w, h = cv.boundingRect(contour)
+# def zoom_in_on_contour(img, contour, padding=10):
+#     # Find the bounding box of the contour
+#     x, y, w, h = cv.boundingRect(contour)
 
-    # Apply padding
-    x = max(0, x - padding)
-    y = max(0, y - padding)
-    w = min(img.shape[1] - x, w + 2 * padding)
-    h = min(img.shape[0] - y, h + 2 * padding)
+#     # Apply padding
+#     x = max(0, x - padding)
+#     y = max(0, y - padding)
+#     w = min(img.shape[1] - x, w + 2 * padding)
+#     h = min(img.shape[0] - y, h + 2 * padding)
 
-    # Crop the image around the bounding box
-    cropped_img = img[y:y+h, x:x+w]
+#     # Crop the image around the bounding box
+#     cropped_img = img[y:y+h, x:x+w]
 
-    return cropped_img
+#     return cropped_img
 
 def process_image(image_path, output_path):
     # First, remove the background
@@ -60,39 +60,33 @@ def process_image(image_path, output_path):
         # Focus on the largest contour (assuming it's the hand or finger)
         largest_contour = contours[0]
 
-        # Zoom in on the largest contour
-        zoomed_img = zoom_in_on_contour(img, largest_contour)
-
-        # Convert the zoomed image to HSV color space
-        hsv_zoomed = cv.cvtColor(zoomed_img, cv.COLOR_BGR2HSV)
-
-        # Threshold the zoomed image to extract only the skin color pixels
-        mask_zoomed = cv.inRange(hsv_zoomed, lower, upper)
-
-        # Perform morphological transformations to remove noise
-        mask_zoomed = cv.morphologyEx(mask_zoomed, cv.MORPH_CLOSE, kernel)
-
-        # Detect contours in the binary image of the zoomed image
-        contours_zoomed, _ = cv.findContours(mask_zoomed, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-
         # Create a binary mask using the largest contour
-        if contours_zoomed:
-            largest_contour_zoomed = sorted(contours_zoomed, key=cv.contourArea, reverse=True)[0]
-            mask_final = np.zeros_like(mask_zoomed)
-            cv.drawContours(mask_final, [largest_contour_zoomed], 0, 255, -1)
+        mask = np.zeros_like(mask)
+        cv.drawContours(mask, [largest_contour], 0, 255, -1)
 
-            # Perform post-processing to further improve the quality of the segmented region
-            mask_final = cv.GaussianBlur(mask_final, (5, 5), 0)
+        # Perform post-processing to further improve the quality of the segmented region
+        mask = cv.GaussianBlur(mask, (5, 5), 0)
 
-            # Segment the hand or finger region from the rest of the image
-            hand = cv.bitwise_and(zoomed_img, zoomed_img, mask=mask_final)
+        # Segment the hand or finger region from the rest of the image
+        hand = cv.bitwise_and(img, img, mask=mask)
 
-            # Convert to grayscale and apply adaptive thresholding
-            hand_gray = cv.cvtColor(hand, cv.COLOR_BGR2GRAY)
-            hand_thresh = cv.adaptiveThreshold(hand_gray, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2)
+        # Convert to grayscale and apply adaptive thresholding
+        hand_gray = cv.cvtColor(hand, cv.COLOR_BGR2GRAY)
+        hand_thresh = cv.adaptiveThreshold(hand_gray, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2)
 
-            # Save the segmented region image
-            cv.imwrite(output_path, hand_thresh)
+        # Find the bounding box of the largest contour
+        x, y, w, h = cv.boundingRect(largest_contour)
+
+        # Crop the image around the bounding box with some padding
+        padding = 10
+        x = max(0, x - padding)
+        y = max(0, y - padding)
+        w = min(img.shape[1], x + w + 2 * padding)
+        h = min(img.shape[0], y + h + 2 * padding)
+        cropped_hand = hand_thresh[y:h, x:w]
+
+        # Save the cropped segmented region image
+        cv.imwrite(output_path, cropped_hand)
 
             # Display the results (optional)
             # plt.figure(figsize=(8, 8))
@@ -107,7 +101,6 @@ def process_image(image_path, output_path):
             # plt.axis('off')
 
             # plt.show()
-        else:
-            print("No contours found in the zoomed image!")
+       
     else:
         print("No contours found!")
