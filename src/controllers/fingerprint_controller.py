@@ -36,16 +36,16 @@ def extract_fingerprints():
         return jsonify({'success': False, 'data': {}, 'message': 'No image file provided'}), 400
 
     uploaded_file = request.files['finger']
-    course_id = request.form.get('courseId')
+    user_id = request.form.get('userId')
 
     if not uploaded_file:
         return jsonify({'success': False, 'data': {}, 'message': 'No finger provided in form data'}), 400
     
-    if not course_id:
+    if not user_id:
         return jsonify({'success': False, 'data': {}, 'message': 'No courseId provided in form data'}), 400
     
     try:
-        data = process_fingerprint(uploaded_file, course_id)
+        data = process_fingerprint(uploaded_file, user_id)
         return jsonify({'success': True, 'data': data, 'message': 'Fingerprint processing completed'}), 200
     except Exception as e:
         return jsonify({'success': False, 'data': {}, 'message': str(e)}), 500

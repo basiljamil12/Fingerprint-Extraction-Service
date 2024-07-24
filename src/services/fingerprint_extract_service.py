@@ -3,7 +3,7 @@ import os
 import cv2
 import numpy as np
 
-def process_fingerprint(file, course_id):
+def process_fingerprint(file, user_id):
     temp_input_path = 'temp_input.png'
     temp_output_path = 'temp_output.png'
     
@@ -19,7 +19,7 @@ def process_fingerprint(file, course_id):
     
     # Prepare data to be returned
     data = {
-        'course_id': course_id,
+        'user_id': user_id,
         'processed_image': processed_image_bytes.hex()  # convert to hex string
     }
     
