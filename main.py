@@ -9,4 +9,4 @@ CORS(app)
 app.add_url_rule('/api/v1/fingerprints/extract', 'extract_fingerprints', extract_fingerprints, methods=['POST'])
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(port=8000,debug=True)
