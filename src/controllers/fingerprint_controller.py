@@ -1,52 +1,43 @@
-# from flask import request, jsonify
-# from src.services.face_recognition_service import recognition_service
-# import numpy as np
-# import cv2
-
-# def extract_fingerprints():
-#     if 'finger' not in request.files:
-#         return jsonify({'success': False, 'data': {}, 'message': 'No image file provided'}), 400
-
-#     uploaded_file = request.files['finger']
-#     course_id = request.form.get('courseId')
-
-#     if not uploaded_file:
-#         return jsonify({'success': False, 'data': {}, 'message': 'No finger provided in form data'}), 400
-    
-#     if not course_id:
-#         return jsonify({'success': False, 'data': {}, 'message': 'No courseId provided in form data'}), 400
-    
-#     data = recognition_service(uploaded_file, course_id)
-    
-#     formatted_data = {
-#     'attendance_records': data[0],
-#     'detected_students_in_image': data[1],
-#     'no_of_niqaabi_students_in_image': data[2],
-#     'detected_image': data[3],
-#     'recognized_students_in_image': data[4],
-#     'unrecognized_students_in_image': data[5]
-#     }
-
-#     return jsonify({'success': True, 'data': formatted_data, 'message': 'Face recognition completed'}), 200
-from flask import request, jsonify
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from src.services.fingerprint_extract_service import process_fingerprint
+import httpx
+from io import BytesIO
+import asyncio
 
-def extract_fingerprints():
-    if 'finger' not in request.files:
-        return jsonify({'success': False, 'data': {}, 'message': 'No finger provided'}), 400
-    
-    user_id = request.form.get('userId')
-    uploaded_file = request.files['finger']
-    
+router = APIRouter()
 
-    if not uploaded_file:
-        return jsonify({'success': False, 'data': {}, 'message': 'No file provided in form data'}), 400
+class FingerprintRequest(BaseModel):
+    userId: str
+    finger: str  # URL of the image
+
+# Create a semaphore to limit concurrency
+semaphore = asyncio.Semaphore(10)  # Limit to 10 concurrent tasks
+
+@router.post("/extract")
+async def extract_fingerprints(request: FingerprintRequest):
+    user_id = request.userId
+    image_url = request.finger
     
     if not user_id:
-        return jsonify({'success': False, 'data': {}, 'message': 'No courseId provided in form data'}), 400
+        raise HTTPException(status_code=400, detail="No userId provided in JSON data")
     
-    try:
-        data = process_fingerprint(uploaded_file, user_id)
-        return jsonify({'success': True, 'data': data, 'message': 'Fingerprint processing completed'}), 200
-    except Exception as e:
-        return jsonify({'success': False, 'data': {}, 'message': str(e)}), 500
+    if not image_url:
+        raise HTTPException(status_code=400, detail="No finger URL provided in JSON data")
+    
+    async with semaphore:  # Acquire semaphore
+        try:
+            # Asynchronously download the image from the provided URL
+            async with httpx.AsyncClient() as client:
+                response = await client.get(image_url)
+                if response.status_code != 200:
+                    raise HTTPException(status_code=400, detail="Failed to retrieve image from URL")
+            
+            # Process the image
+            image_data = BytesIO(response.content)  # Use BytesIO to handle the image in-memory
+            data = process_fingerprint(image_data, user_id)
+            
+            return JSONResponse(content={'success': True, 'data': data, 'message': 'Fingerprint processing completed'}, status_code=200)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
