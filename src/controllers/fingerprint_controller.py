@@ -12,8 +12,8 @@ class FingerprintRequest(BaseModel):
     userId: str
     finger: str  # URL of the image
 
-# Create a semaphore to limit concurrency
-semaphore = asyncio.Semaphore(10)  # Limit to 10 concurrent tasks
+# Create a semaphore to limit concurrencys
+semaphore = asyncio.Semaphore(10)   
 
 @router.post("/extract")
 async def extract_fingerprints(request: FingerprintRequest):
