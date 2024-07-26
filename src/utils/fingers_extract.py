@@ -104,3 +104,4 @@ def process_image(image_path, output_path):
        
     else:
         print("No contours found!")
+
