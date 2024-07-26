@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File,Form
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from src.services.fingerprint_extract_service import process_fingerprint
@@ -8,36 +8,24 @@ import asyncio
 
 router = APIRouter()
 
-class FingerprintRequest(BaseModel):
-    userId: str
-    finger: str  # URL of the image
-
 # Create a semaphore to limit concurrency
-semaphore = asyncio.Semaphore(10)  # Limit to 10 concurrent tasks
+semaphore = asyncio.Semaphore(10)
 
 @router.post("/extract")
-async def extract_fingerprints(request: FingerprintRequest):
-    user_id = request.userId
-    image_url = request.finger
-    
-    if not user_id:
-        raise HTTPException(status_code=400, detail="No userId provided in JSON data")
-    
-    if not image_url:
-        raise HTTPException(status_code=400, detail="No finger URL provided in JSON data")
-    
+async def extract_fingerprints( file: UploadFile = File(...)):
+
+    if not file:
+        raise HTTPException(status_code=400, detail="No file provided in form data")
+
     async with semaphore:  # Acquire semaphore
         try:
-            # Asynchronously download the image from the provided URL
-            async with httpx.AsyncClient() as client:
-                response = await client.get(image_url)
-                if response.status_code != 200:
-                    raise HTTPException(status_code=400, detail="Failed to retrieve image from URL")
-            
+            # Read the file contents
+            image_data = await file.read()
+            image_stream = BytesIO(image_data)
+
             # Process the image
-            image_data = BytesIO(response.content)  # Use BytesIO to handle the image in-memory
-            data = process_fingerprint(image_data, user_id)
-            
+            data = process_fingerprint(image_stream)
+
             return JSONResponse(content={'success': True, 'data': data, 'message': 'Fingerprint processing completed'}, status_code=200)
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))

@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from io import BytesIO
 
-def process_fingerprint(file_stream, user_id):
+def process_fingerprint(file_stream):
     # Generate unique file names using timestamp and UUID
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     unique_id = uuid.uuid4().hex
@@ -27,7 +27,6 @@ def process_fingerprint(file_stream, user_id):
         
         # Prepare data to be returned
         data = {
-            'user_id': user_id,
             'processed_image': processed_image_bytes.hex()  # convert to hex string
         }
         
