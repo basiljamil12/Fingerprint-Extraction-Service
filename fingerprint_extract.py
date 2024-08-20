@@ -160,7 +160,8 @@ from rembg import remove
 from PIL import Image
 import cv2 as cv
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
+import sys
 
 def remove_background(image_path):
     # Read image
@@ -174,21 +175,6 @@ def remove_background(image_path):
     output_image_np = np.array(output_image_pil)
 
     return output_image_np
-
-# def zoom_in_on_contour(img, contour, padding=10):
-#     # Find the bounding box of the contour
-#     x, y, w, h = cv.boundingRect(contour)
-
-#     # Apply padding
-#     x = max(0, x - padding)
-#     y = max(0, y - padding)
-#     w = min(img.shape[1] - x, w + 2 * padding)
-#     h = min(img.shape[0] - y, h + 2 * padding)
-
-#     # Crop the image around the bounding box
-#     cropped_img = img[y:y+h, x:x+w]
-
-#     return cropped_img
 
 def process_image(image_path, output_path):
     # First, remove the background
@@ -246,23 +232,21 @@ def process_image(image_path, output_path):
         # Save the cropped segmented region image
         cv.imwrite(output_path, cropped_hand)
 
-            # Display the results (optional)
-            # plt.figure(figsize=(8, 8))
-            # plt.subplot(1, 2, 1)
-            # plt.title('Segmented Region')
-            # plt.imshow(hand_thresh, cmap='gray')
-            # plt.axis('off')
+        # Display the results
+        # plt.figure(figsize=(8, 8))
+        # plt.subplot(1, 2, 1)
+        # plt.title('Segmented Region')
+        # plt.imshow(cropped_hand, cmap='gray')
+        # plt.axis('off')
 
-            # plt.subplot(1, 2, 2)
-            # plt.title('Original Image with Mask')
-            # plt.imshow(cv.cvtColor(zoomed_img, cv.COLOR_BGR2RGB))
-            # plt.axis('off')
+        # plt.subplot(1, 2, 2)
+        # plt.title('Original Image with Mask')
+        # plt.imshow(cv.cvtColor(img, cv.COLOR_BGR2RGB))
+        # plt.axis('off')
 
-            # plt.show()
-       
+        # plt.show()
     else:
         print("No contours found!")
-
 
 
 
